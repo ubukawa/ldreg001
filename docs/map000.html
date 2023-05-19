@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<title>Test- 国土地理院最適化ベクトルタイル </title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js'></script>
+<link href='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css' rel='stylesheet' />
+<link href='https://ubukawa.github.io/cmv-test/watergis/maplibre-gl-export@1.3.8/maplibre-gl-export.css' rel='stylesheet' />
+<script src='https://ubukawa.github.io/cmv-test/watergis/maplibre-gl-export@1.3.8/maplibre-gl-export.js'></script>
+<link href='https://ubukawa.github.io/cmv-test/watergis/maplibre-gl-legend@1.2.8/maplibre-gl-legend.css' rel='stylesheet' />
+<script src='https://ubukawa.github.io/cmv-test/watergis/maplibre-gl-legend@1.2.8/maplibre-gl-legend.js'></script>
+  
+  
+<style>
+body { margin:0; padding:0; }
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+</style>
+</head>
+<body onload="popupFunction()">
+ 
+<div id='map'></div>
+
+<script>
+function popupFunction() {
+   alert("G空間情報センターからダウンロードした法務省登記所備付地図データを地理院地図Vectorに重ねた表示例です。各データの縮尺の違いによる誤差が含まれます。")
+}
+
+var map = new maplibregl.Map({
+  container: 'map', 
+  attributionControl: true,
+  hash: true, 
+  //renderWorldCopies: false,
+  style: 'https://gsi-cyberjapan.github.io/optimal_bvmap/style/std.json', // style file path
+  center: [145.58222, 43.3299], // center [lng, lat]
+  zoom: 8, // zoom level at loading
+  maxPitch: 85,
+  maxZoom: 4, // min zoom
+  maxZoom: 22 // max zoom
+});
+
+map.on('load', function(){
+  map.addSource('nemuro',{
+    type: 'geojson',
+    data: './geojson/nemuro.geojson'
+  });
+  map.addLayer({
+    'minzoom':10, 
+    'maxzoom':21,
+    'id':'nemuro',
+    'type':'line',
+    'source':'nemuro',
+    'paint':{
+//      'line-color':'#0000FF',
+      'line-color':[
+        'match',
+        ['get','精度区分'],
+        ['甲一','甲二'],
+        '#0000FF',
+        ['甲三','乙一'],
+        '#00FF00',
+        ['乙二','乙三'],
+        '#00FFFF',
+        '#FF00FF'
+      ],
+      'line-width': 0.7
+    }
+  })
+  map.addLayer({
+    'minzoom':16, 
+    'maxzoom':21,
+    'id':'nemuro-label',
+    'type':'symbol',
+    'source':'nemuro',
+    'layout':{
+      'text-field': ['get','QGIS_ID'],
+      'text-font':['NotoSerifJP-SemiBold'],
+      'text-size': 10
+    },
+    'paint':{
+      'text-color':[
+        'match',
+        ['get','精度区分'],
+        ['甲一','甲二'],
+        '#0000FF',
+        ['甲三','乙一'],
+        '#00FF00',
+        ['乙二','乙三'],
+        '#00FFFF',
+        '#FF00FF'
+      ],
+      'text-halo-color': 'rgba(255,255,255,0.5)',
+      'text-halo-width':1
+    }
+  })
+  //legend
+  const legend_target = {
+    'nemuro': '登記所備付地図データ 根室市',
+    'nemuro-label': '登記所備付地図データ 根室市（ラベル）',
+  };
+  map.addControl(new MaplibreLegendControl(legend_target, {
+    showDefault: false,
+    onlyRendered: true,
+    reverseOrder: false
+  }), 'bottom-left');
+})
+  
+//UI
+//map.addControl(new maplibregl.AttributionControl({customAttribution: "GSI Map Vector." , compact: true}));
+map.addControl(new maplibregl.AttributionControl({customAttribution: "<br />登記所備付地図データについては、精度区分が異なるデータが含まれることから、線色を変えて表現しています。<br />（青：甲一、甲二、緑：甲三、乙一、水色：乙二、乙三、ピンク：その他（null等））" }));
+map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+map.addControl(new maplibregl.ScaleControl() );
+
+//Export
+map.addControl(new MaplibreExportControl({
+  PageSize: Size.A4,
+  PageOrientation: PageOrientation.Portrait,
+  Format: Format.PNG,
+  DPI: DPI[96],
+  //Crosshair: true,
+  PrintableArea: true,
+  Local: 'en'
+}), 'top-right');
+
+
+
+//debug
+//map.showTileBoundaries = true;
+map.showTileBoundaries = false;
+map.showCollisionBoxes = false;
+
+</script>
+ 
+</body>
+</html>
